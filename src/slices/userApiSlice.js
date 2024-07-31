@@ -12,10 +12,9 @@ export const usersApiSlice = apiSlice.injectEndpoints({
       }),
     }),
     getProfile: builder.query({
-      query: (data) => ({
+      query: () => ({
         url: `${USER_URL}/profile`,
         method: "GET",
-        body: data,
         headers: {
           Authorization: `Bearer ${getTokenFromLocalStorage()}`, // Replace with your function to get the token
         },

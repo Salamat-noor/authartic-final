@@ -57,16 +57,22 @@ const Header = () => {
           </Button>
         </Link>
       ) : (
-        <Link href={"/"}>
-          <Button
-            variant="h6"
-            color="inherit"
-            className="font-Kodchasan text-[20px] font-semibold cursor-pointer"
-            onClick={handleLogout}
-          >
-            Logout
-          </Button>
-        </Link>
+        <div className="flex flex-col items-end ">
+          <Link href={"/"}>
+            <Button
+              variant="h6"
+              color="inherit"
+              className="font-Kodchasan text-[20px] font-semibold cursor-pointer p-0"
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
+          </Link>
+
+          <Link href={"/account-settings"}>
+            <small>account-settings</small>
+          </Link>
+        </div>
       )}
     </Box>
   );

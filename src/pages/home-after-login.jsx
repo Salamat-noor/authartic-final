@@ -6,14 +6,20 @@ import Header from "@/components/header";
 import { Button } from "@mui/material";
 import Footer from "@/components/footer";
 import { useGetMyCertificateInfoQuery } from "@/slices/certificateInfoApiSlice";
+import { useGetProfileQuery } from "@/slices/userApiSlice";
 
 const index = () => {
+  const { data, error: authError } = useGetProfileQuery();
+  console.log("adsfsadf  ", data);
+  console.log(authError);
   const {
     data: certificateData,
     error,
     isError,
     isLoading,
   } = useGetMyCertificateInfoQuery();
+
+  console.log(error);
 
   return (
     <>
@@ -38,7 +44,7 @@ const index = () => {
               ))}
               {isError && (
                 <h1 className="text-red-700 font-bold text-xl">
-                  {error?.error}
+                  {error?.data?.message}
                 </h1>
               )}
               {certificateData?.total === 0 && (

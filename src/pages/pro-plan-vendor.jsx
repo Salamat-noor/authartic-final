@@ -7,7 +7,6 @@ import {
   Button,
   Box,
   TextField,
-  MenuItem,
   Radio,
   Avatar,
   Checkbox,
@@ -18,6 +17,7 @@ import { Check, Close } from "@mui/icons-material";
 import Icon from "../assets/images/elements.svg";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { useRouter } from "next/router";
 
 const initialData = {
   name: "",
@@ -33,6 +33,7 @@ const initialData = {
 };
 
 function ProPlanVendor() {
+  const router = useRouter();
   const uploadProductImageRef = useRef(null);
   const uploadCustomBgRef = useRef(null);
   const [productImagePreview, setProductImagePreview] = useState({
@@ -54,7 +55,6 @@ function ProPlanVendor() {
   });
   const handleProductImageInputClick = () =>
     uploadProductImageRef.current.click();
-
   const handleCustomImageInputClick = () => uploadCustomBgRef.current.click();
 
   const handleProductImageChange = (e) => {
@@ -74,7 +74,7 @@ function ProPlanVendor() {
     }
   };
 
-  const handleCustomBgImage = (e) => {
+  const handleCustomBackgroundImageChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       toast.success(selectedFile.name);
@@ -91,79 +91,77 @@ function ProPlanVendor() {
     }
   };
 
-  const handleCustomImageFileUpload = async () => {
-    if (imageFiles.customBgImage) {
-      try {
-        const formData = new FormData();
-        formData.append("file", imageFiles.customBgImage);
-        formData.append("type", "text/photo");
-        const response = await uploadCustomImage(formData).unwrap();
-        console.log(response);
-        toast.success("Product Image uploaded successfully!");
-        setFormData((prev) => ({ ...prev, custom_bg: response?.id }));
-      } catch (error) {
-        toast.error("Product Image upload failed");
-      }
-    }
-  };
-
-  const handleProductImageFileUpload = async () => {
-    if (imageFiles.productImage) {
-      try {
-        const formData = new FormData();
-        formData.append("file", imageFiles.productImage);
-        formData.append("type", "text/photo");
-        const response = await uploadProductImage(formData).unwrap();
-        toast.success("Product Image uploaded successfully!");
-        setFormData((prev) => ({ ...prev, product_image_id: response?.id }));
-      } catch (error) {
-        toast.error("Product Image upload failed");
-      }
-    } else {
-      toast.error("No Image file Choosen");
-    }
-  };
-
   const handleSubmit = async (toggleDraft) => {
-    if (acceptCertificate) {
-      handleProductImageFileUpload();
-      handleCustomImageFileUpload();
-      const updatedData = { ...formData, saved_draft: toggleDraft };
-      setFormData(updatedData);
-
-      if (
-        !updatedData.name ||
-        !updatedData.description ||
-        !updatedData.product_sell ||
-        updatedData.product_image_id === null
-      ) {
-        toast.error("Please fill all required fields and upload an image.");
-      }
-
-      try {
-        await createCertificate(updatedData).unwrap();
-        toast.success("Certificate created!");
-
-        // Clearing Certificate Data to initial State
-        setFormData(initialData);
-        setImageFiles({
-          productImage: null,
-          customBgImage: null,
-        });
-        setAcceptCertificate(false);
-        setProductImagePreview((prev) => {
-          return {
-            ...prev,
-            productImagePreview: null,
-            customImagePreview: null,
-          };
-        });
-      } catch (error) {
-        console.error(error);
-        toast.error("Certificate creation failed");
-      }
+    if (!formData.name || !formData.description || !formData.product_sell) {
+      toast.warning("Form fields must be filled correctly");
+    } else if (!acceptCertificate) {
+      toast.info("You must accept acknowledge to continue");
     } else {
-      toast.error("You must acknowledge the certificate");
+      try {
+        // Upload Product Image
+        if (imageFiles.productImage) {
+          const productImageFormData = new FormData();
+          productImageFormData.append("file", imageFiles.productImage);
+          productImageFormData.append("type", "text/photo");
+          const productImageResponse = await uploadProductImage(
+            productImageFormData
+          ).unwrap();
+
+          // Extract the product image ID from the response
+          const productImageId = productImageResponse?.id;
+
+          // Upload Custom Background Image
+          if (imageFiles.customBgImage) {
+            const customBgFormData = new FormData();
+            customBgFormData.append("file", imageFiles.customBgImage);
+            customBgFormData.append("type", "text/photo");
+            const customBgResponse = await uploadCustomImage(
+              customBgFormData
+            ).unwrap();
+
+            // Extract the custom background image ID from the response
+            const customBgId = customBgResponse?.id;
+
+            // Create the Certificate
+            const certificateData = {
+              name: formData.name,
+              description: formData.description,
+              number_of_certificate: parseInt(formData.number_of_certificate),
+              font: formData.font,
+              font_color: formData.font_color,
+              bg_color: formData.bg_color,
+              saved_draft: toggleDraft, // Adjust based on your requirement
+              product_sell: formData.product_sell,
+              product_image_id: productImageId,
+              custom_bg: customBgId,
+            };
+
+            const certificateResponse = await createCertificate(
+              certificateData
+            ).unwrap();
+            // Handle success - Reset form and show success message
+            setFormData(initialData);
+            setImageFiles({
+              productImage: null,
+              customBgImage: null,
+            });
+            setProductImagePreview({
+              productImagePreview: null,
+              customImagePreview: null,
+            });
+            setAcceptCertificate(false);
+            toast.success("Certificate created successfully!");
+            router.push("/home-after-login");
+          } else {
+            toast.error("Custom background image not provided.");
+          }
+        } else {
+          toast.error("Product image not provided.");
+        }
+      } catch (error) {
+        console.error("Error during submission:", error);
+        toast.error("Failed to create certificate. Please try again.");
+      }
     }
   };
 
@@ -180,8 +178,9 @@ function ProPlanVendor() {
     toast.success("Certificate Cleared!");
   };
 
+  // Warning Tip When Both Background Color and Font Color are same....
   useEffect(() => {
-    if (formData.font_color === formData.bg_color) {
+    if (formData.bg_color == formData.font_color) {
       toast.info(
         "Hint: You have choose same colors check 'Background color' and 'Font color'"
       );
@@ -499,7 +498,7 @@ function ProPlanVendor() {
                       type="file"
                       className="hidden"
                       ref={uploadCustomBgRef}
-                      onChange={handleCustomBgImage}
+                      onChange={handleCustomBackgroundImageChange}
                     />
                   </Box>
                 </Box>
