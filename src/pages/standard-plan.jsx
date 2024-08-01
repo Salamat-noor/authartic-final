@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { usePostCertificateInfoMutation } from "@/slices/certificateInfoApiSlice";
 import { useUploadAttachmentMutation } from "@/slices/uploadAttachmentApiSlice";
 import { toast } from "react-toastify";
@@ -8,17 +7,17 @@ import {
   Button,
   Box,
   TextField,
-  MenuItem,
   Radio,
-  Checkbox,
   Avatar,
+  Checkbox,
 } from "@mui/material";
-import Icon from "@/assets/images/elements.svg";
+import Image from "next/image";
+import ColorPicker from "@/components/colorPicker";
+import { Check, Close } from "@mui/icons-material";
+import Icon from "../assets/images/elements.svg";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { useRouter } from "next/router";
-import ColorPicker from "@/components/colorPicker";
-import { Check, Close } from "@mui/icons-material";
 
 const initialData = {
   name: "",
@@ -32,108 +31,135 @@ const initialData = {
   product_image_id: null,
 };
 
-function index() {
+function Index() {
   const router = useRouter();
-  const uploadFileRef = useRef(null);
-  const [productImagePreview, setProductImagePreview] = useState(null);
-  const [uploadAttachment] = useUploadAttachmentMutation();
+  const uploadProductImageRef = useRef(null);
+  const uploadCustomBgRef = useRef(null);
+  const [productImagePreview, setProductImagePreview] = useState({
+    productImagePreview: null,
+    customImagePreview: null,
+  });
+  const [uploadProductImage] = useUploadAttachmentMutation();
+  const [uploadCustomImage] = useUploadAttachmentMutation();
   const [createCertificate] = usePostCertificateInfoMutation();
   const [toggleColorPicker, setToggleColorPicker] = useState({
     isOpenFontColorpicker: false,
     isOpenBgColorPicker: false,
   });
-  const [data2Send, setData2Send] = useState(initialData);
+  const [formData, setFormData] = useState(initialData);
   const [acceptCertificate, setAcceptCertificate] = useState(false);
-  const [file, setFile] = useState("");
+  const [imageFiles, setImageFiles] = useState({
+    productImage: null,
+    customBgImage: null,
+  });
+  const handleProductImageInputClick = () =>
+    uploadProductImageRef.current.click();
 
-  const handleInputFileClick = () => uploadFileRef.current.click();
-
-  const handleFileChange = (e) => {
+  const handleProductImageChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      toast.success(selectedFile);
-      setFile(selectedFile);
+      toast.success(selectedFile.name);
+      setImageFiles((prev) => {
+        return { ...prev, productImage: selectedFile };
+      });
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProductImagePreview(reader.result);
+        setProductImagePreview((prev) => {
+          return { ...prev, productImagePreview: reader.result };
+        });
       };
       reader.readAsDataURL(selectedFile);
     }
   };
-  const handleUploadFile = async () => {
-    if (file) {
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("type", "text/photo");
-        const response = await uploadAttachment(formData).unwrap();
-        toast.success("File uploaded successfully!");
-        setData2Send((prev) => ({ ...prev, product_image_id: response?.id }));
-      } catch (error) {
-        toast.error("File upload failed");
-      }
-    } else {
-      toast.error("No Image file Choosen");
-    }
-  };
 
   const handleSubmit = async (toggleDraft) => {
-    if (acceptCertificate) {
-      const updatedData = { ...data2Send, saved_draft: toggleDraft };
-      setData2Send(updatedData);
-
-      if (
-        !updatedData.name ||
-        !updatedData.description ||
-        updatedData.product_image_id === null
-      ) {
-        toast.error("Please fill all required fields and upload an image.");
-        return;
-      }
-
-      try {
-        const response = await createCertificate(updatedData).unwrap();
-        toast.success("Certificate created!");
-        setData2Send(initialData);
-        setFile(null);
-        setAcceptCertificate(false);
-        setProductImagePreview(null);
-      } catch (error) {
-        console.error(error);
-        toast.error("Certificate creation failed");
-      }
+    if (!formData.name || !formData.description || !formData.product_sell) {
+      toast.warning("Form fields must be filled correctly");
+    } else if (!acceptCertificate) {
+      toast.info("You must accept acknowledge to continue");
     } else {
-      toast.error("You must acknowledge the certificate");
+      try {
+        // Upload Product Image
+        if (imageFiles.productImage) {
+          const productImageFormData = new FormData();
+          productImageFormData.append("file", imageFiles.productImage);
+          productImageFormData.append("type", "text/photo");
+          const productImageResponse = await uploadProductImage(
+            productImageFormData
+          ).unwrap();
+
+          // Extract the product image ID from the response
+          const productImageId = productImageResponse?.id;
+
+          // Create the Certificate
+          const certificateData = {
+            name: formData.name,
+            description: formData.description,
+            number_of_certificate: parseInt(formData.number_of_certificate),
+            font: formData.font,
+            font_color: formData.font_color,
+            bg_color: formData.bg_color,
+            saved_draft: toggleDraft, // Adjust based on your requirement
+            product_sell: formData.product_sell,
+            product_image_id: productImageId,
+          };
+
+          const certificateResponse = await createCertificate(
+            certificateData
+          ).unwrap();
+          // Handle success - Reset form and show success message
+          setFormData(initialData);
+          setImageFiles({
+            productImage: null,
+          });
+          setProductImagePreview({
+            productImagePreview: null,
+          });
+          setAcceptCertificate(false);
+          toast.success("Certificate created successfully!");
+          router.push("/home-after-login");
+        } else {
+          toast.error("Product image not provided.");
+        }
+      } catch (error) {
+        console.error("Error during submission:", error);
+        toast.error("Failed to create certificate. Please try again.");
+      }
     }
   };
 
   const handleCancelSubmit = () => {
-    setData2Send(initialData);
-    setFile(null);
+    setFormData(initialData);
+    setImageFiles({
+      productImage: null,
+    });
     setAcceptCertificate(false);
-    setProductImagePreview(null);
+    setProductImagePreview((prev) => {
+      return { ...prev, productImagePreview: null };
+    });
     toast.success("Certificate Cleared!");
   };
 
+  // Warning Tip When Both Background Color and Font Color are same....
   useEffect(() => {
-    if (data2Send.font_color === data2Send.bg_color) {
+    if (formData.bg_color == formData.font_color) {
       toast.info(
         "Hint: You have choose same colors check 'Background color' and 'Font color'"
       );
     }
-  }, [data2Send.font_color, data2Send.bg_color]);
+  }, [formData.font_color, formData.bg_color]);
 
   return (
     <>
       <Header />
       <Box className="min-h-screen">
-        <Box className="max-w-[602px] w-full  mx-auto bg-[#22477F] py-6 my-6 rounded-[30px] px-[20px]">
-          {/* NAME AND DESCRIPTION */}
+        <Box className="max-w-[602px] w-full mx-auto bg-[#22477F] py-6 my-6 rounded-[30px] px-[20px]">
+          {/* NAME AND DESCRIPTION FIELDS */}
           <Box className="bg-[#ADA8A8] rounded-tl-[20px] rounded-tr-[20px] rounded-br-[20px] p-4 max-w-[518px] w-full mx-auto ">
             <TextField
-              value={data2Send.name}
+              value={formData.name}
               onChange={(e) =>
-                setData2Send((prev) => {
+                setFormData((prev) => {
                   return { ...prev, name: e.target.value };
                 })
               }
@@ -160,9 +186,9 @@ function index() {
               }}
             />
             <TextField
-              value={data2Send.description}
+              value={formData.description}
               onChange={(e) =>
-                setData2Send((prev) => {
+                setFormData((prev) => {
                   return { ...prev, description: e.target.value };
                 })
               }
@@ -191,16 +217,13 @@ function index() {
           </Box>
 
           <Box className="flex flex-col md:flex-row md:justify-around items-center mb-6">
-            {/* HANDLE PRODUCT IMAGE UPLOAD  */}
+            {/* HANDLE PRODUCT IMAGE UPLOAD */}
             <Box className="md:bg-[#ADA8A8] bg-transparent rounded-br-[20px] rounded-bl-[20px] p-8 max-w-[280px] w-full mb-4 md:mb-0">
-              <Button
-                className="flex text-black bg-[#fff] rounded-[41.47px] px-4 py-4 gap-2"
-                onClick={handleInputFileClick}
-              >
-                {productImagePreview ? (
+              <Button className="flex text-black bg-[#fff] rounded-[41.47px] px-4 py-4 gap-2">
+                {productImagePreview.productImagePreview ? (
                   <Avatar
                     alt="Remy Sharp"
-                    src={productImagePreview}
+                    src={productImagePreview.productImagePreview}
                     sx={{ width: 46, height: 46 }}
                   />
                 ) : (
@@ -211,13 +234,13 @@ function index() {
                 <input
                   type="file"
                   className="hidden"
-                  ref={uploadFileRef}
-                  onChange={handleFileChange}
+                  ref={uploadProductImageRef}
+                  onChange={handleProductImageChange}
                 />
               </Button>
               <Button
                 className=" bg-[#3276E8] text-white rounded-[41.47px] w-full px-4 py-2 mt-3"
-                onClick={handleUploadFile}
+                onClick={handleProductImageInputClick}
               >
                 Upload Now
               </Button>
@@ -230,9 +253,9 @@ function index() {
                   Number of Certificates
                 </legend>
                 <input
-                  value={data2Send.number_of_certificate}
+                  value={formData.number_of_certificate}
                   onChange={(e) =>
-                    setData2Send((prev) => {
+                    setFormData((prev) => {
                       return { ...prev, number_of_certificate: e.target.value };
                     })
                   }
@@ -245,14 +268,14 @@ function index() {
             </Box>
           </Box>
           <Box className="max-w-[518px] w-full mx-auto my-2 border-2 border-[#606060] rounded-[30px] flex flex-col items-center py-4 px-2">
-            {/* FONT SELECT BOX */}
+            {/* HANDLE FONTS SETTINGS */}
             <fieldset className="max-w-[335px] w-full bg-white mt-[10px] rounded-[10px] border-[#606060] border-2 flex flex-col outline-none overflow-hidden">
               <legend className="text-sm md:text-base font-normal bg-white px-[3px] pb-[3px] tracking-tighter">
                 Fonts
               </legend>
               <select
                 onChange={(e) =>
-                  setData2Send((prev) => {
+                  setFormData((prev) => {
                     return { ...prev, font: e.target.value };
                   })
                 }
@@ -267,11 +290,11 @@ function index() {
               </select>
             </fieldset>
 
-            {/* TOGGLE FONT COLOR PICKER */}
+            {/* HANDLE FONT COLOR PICKER */}
             <Box className="flex items-center mt-4 relative">
               <Typography className="mr-2 text-[#fff]">Font Color:</Typography>
               <span
-                style={{ backgroundColor: data2Send.font_color }}
+                style={{ backgroundColor: formData.font_color }}
                 className="w-[35px] h-[35px] inline-block relative cursor-pointer rounded-sm hover:shadow-xl hover:scale-[1.1] transition-all"
                 onClick={() => {
                   setToggleColorPicker((prev) => {
@@ -288,14 +311,14 @@ function index() {
                 }`}
               >
                 <h1
-                  style={{ color: data2Send.font_color }}
+                  style={{ color: formData.font_color }}
                   className="text-base font-medium"
                 >
                   Font Color
                 </h1>
                 <ColorPicker
-                  initialColor={data2Send.font_color}
-                  setInitialColor={setData2Send}
+                  initialColor={formData.font_color}
+                  setInitialColor={setFormData}
                 />
                 <div className="flex items-center justify-between">
                   <Button
@@ -304,7 +327,7 @@ function index() {
                       setToggleColorPicker((prev) => {
                         return { ...prev, isOpenFontColorpicker: false };
                       });
-                      setData2Send((prev) => {
+                      setFormData((prev) => {
                         return { ...prev, font_color: initialData.font_color };
                       });
                     }}
@@ -326,8 +349,8 @@ function index() {
               </div>
             </Box>
 
+            {/* HANDLE BACKGROUND COLOR AND BACKGROUND IMAGE SETTINGS */}
             <Box className="flex my-6 w-full justify-around">
-              {/* TOGGLE BACKGROUND COLOR PICKER */}
               <Box className="flex flex-col justify-center items-center relative">
                 <Box className="flex items-center justify-around">
                   <Radio
@@ -339,9 +362,8 @@ function index() {
                     Background Color
                   </Typography>
                 </Box>
-
                 <span
-                  style={{ backgroundColor: data2Send.bg_color }}
+                  style={{ backgroundColor: formData.bg_color }}
                   className="w-[47px] h-[41px] rounded-sm inline-block relative cursor-pointer"
                   onClick={() => {
                     setToggleColorPicker((prev) => {
@@ -361,14 +383,14 @@ function index() {
                   }`}
                 >
                   <h1
-                    style={{ backgroundColor: data2Send.bg_color }}
+                    style={{ backgroundColor: formData.bg_color }}
                     className="text-base font-medium w-full h-[30px] text-white"
                   >
                     BG Color
                   </h1>
                   <ColorPicker
-                    initialBGColor={data2Send.bg_color}
-                    setInitialColor={setData2Send}
+                    initialBGColor={formData.bg_color}
+                    setInitialColor={setFormData}
                   />
                   <div className="flex items-center justify-between">
                     <Button
@@ -377,7 +399,7 @@ function index() {
                         setToggleColorPicker((prev) => {
                           return { ...prev, isOpenBgColorPicker: false };
                         });
-                        setData2Send((prev) => {
+                        setFormData((prev) => {
                           return {
                             ...prev,
                             bg_color: initialData.bg_color,
@@ -401,6 +423,7 @@ function index() {
                   </div>
                 </div>
               </Box>
+              {/* HANDLE CUSTOM BACKGROUND IMAGE UPLOAD */}
               <Box className="flex flex-col justify-center items-center border-xl relative mt-4">
                 <Box className="flex items-center">
                   <Radio
@@ -421,7 +444,6 @@ function index() {
                     </Typography>
                   </Box>
                 </Box>
-
                 <Box
                   className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center rounded-[28px] max-w-[300px] w-full ml-2 p-2 select-none cursor-pointer hover:shadow-lg "
                   onClick={() => router.push("package-plans")}
@@ -432,6 +454,7 @@ function index() {
                   </Typography>
                 </Box>
               </Box>
+              ;
             </Box>
           </Box>
           <Box className="max-w-[476px] w-full mx-auto mb-6">
@@ -444,9 +467,9 @@ function index() {
                 Where will this product primarily sell?
               </Typography>
               <TextField
-                value={data2Send.product_sell}
+                value={formData.product_sell}
                 onChange={(e) =>
-                  setData2Send((prev) => {
+                  setFormData((prev) => {
                     return { ...prev, product_sell: e.target.value };
                   })
                 }
@@ -517,15 +540,15 @@ function index() {
             <Box display="flex" flexDirection="column" alignItems="end" gap={2}>
               <Button
                 variant="contained"
-                className="bg-[#27A213] rounded-[7px] font-kodchasan px-4"
                 onClick={() => handleSubmit(false)}
+                className="bg-[#27A213] rounded-[7px] font-kodchasan px-4"
               >
                 Place Order
               </Button>
               <Button
+                onClick={() => handleSubmit(true)}
                 variant="contained"
                 className="bg-[#81ACF3] rounded-[7px] font-kodchasan px-4"
-                onClick={() => handleSubmit(true)}
               >
                 Save Draft
               </Button>
@@ -545,4 +568,4 @@ function index() {
   );
 }
 
-export default index;
+export default Index;
