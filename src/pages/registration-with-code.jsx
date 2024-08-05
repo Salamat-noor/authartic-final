@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   TextField,
   Button,
+  Avatar,
   Box,
   MenuItem,
   Checkbox,
@@ -19,13 +20,8 @@ import { toast } from "react-toastify";
 import { useRegisterMutation } from "@/slices/userApiSlice";
 
 const CodeRegistration = () => {
-  const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
-  const [emailValid, setEmailValid] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isFormValid, setIsFormValid] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState({});
   const [brandName, setBrandName] = useState("");
   const [primaryContent, setPrimaryContent] = useState("");
@@ -39,11 +35,37 @@ const CodeRegistration = () => {
   const [socialMediaLinks, setSocialMediaLinks] = useState([]);
   const [otherLinks, setOtherLinks] = useState([]);
   const [validation_code_id, setValidationCodeId] = useState(0);
-  const [attachment_id, setAttachmentId] = useState(0);
+  const [acceptForm, setAcceptForm] = useState(false);
 
   const router = useRouter();
   const [uploadAttachment] = useUploadAttachmentMutation();
   const [register, { isLoading }] = useRegisterMutation();
+  const uploadProductImageRef = useRef(null);
+  const [imageFiles, setImageFiles] = useState({
+    productImage: null,
+  });
+  const [productImagePreview, setProductImagePreview] = useState({
+    productImagePreview: null,
+    customImagePreview: null,
+  });
+  const handleProductImageChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      toast.success(selectedFile.name);
+      setImageFiles((prev) => {
+        return { ...prev, productImage: selectedFile };
+      });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProductImagePreview((prev) => {
+          return { ...prev, productImagePreview: reader.result };
+        });
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+  };
+  const handleProductImageInputClick = () =>
+    uploadProductImageRef.current.click();
 
   const {
     data: countries = [],
@@ -57,38 +79,6 @@ const CodeRegistration = () => {
 
   const handleBrandNameChange = (e) => {
     setBrandName(e.target.value);
-  };
-
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    setSelectedFile(file);
-    toast.info(`Selected file: ${file.name}`);
-  };
-
-  const handleFileUpload = async () => {
-    if (!selectedFile) {
-      toast.error("Please select a file to upload.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-
-    try {
-      setIsUploading(true);
-      const response = await uploadAttachment(formData).unwrap();
-      setUploadResult(response);
-      toast.success("File uploaded successfully!");
-      console.log(response);
-
-      setAttachmentId(response.data.id);
-    } catch (error) {
-      // Ensure response contains the correct id
-      toast.error("Error uploading file. Please try again later.");
-    } finally {
-      setIsUploading(false);
-      setSelectedFile(null);
-    }
   };
 
   const handleCountryChange = (e) => {
@@ -137,29 +127,46 @@ const CodeRegistration = () => {
       }
     }
 
-    try {
-      const registerData = {
-        user_name: brandName,
-        primary_content: primaryContent,
-        email: email,
-        phone: phone,
-        password: password,
-        about_brand: description,
-        website_url: website,
-        social_media: socialMediaLinks,
-        other_links: otherLinks,
-        country_id: selectedCountry.id,
-        validation_code_id: validation_code_id,
-        attachment_id: attachment_id,
-        role: "VENDOR",
-      };
+    {
+      if (acceptForm) {
+        if (imageFiles.productImage) {
+          try {
+            const formData = new FormData();
+            formData.append("file", imageFiles.productImage);
+            formData.append("type", "text/photo");
 
-      const response = await register(registerData).unwrap();
-      toast.success("Registration successful!");
-      console.log("response", response);
-      router.push("/");
-    } catch (error) {
-      toast.error(error?.data?.message || error.error);
+            const uploadRes = await uploadAttachment(formData).unwrap();
+            setUploadResult(uploadRes);
+
+            const registerData = {
+              user_name: brandName,
+              primary_content: primaryContent,
+              email: email,
+              phone: phone,
+              password: password,
+              about_brand: description,
+              website_url: website,
+              social_media: socialMediaLinks,
+              other_links: otherLinks,
+              country_id: selectedCountry.id,
+              validation_code_id: validation_code_id,
+              attachment_id: uploadRes?.id,
+              role: "VENDOR",
+            };
+
+            const response = await register(registerData).unwrap();
+            toast.success("Registration successful!");
+            console.log("response", response);
+            router.push("/");
+          } catch (error) {
+            toast.error(error?.data?.message || error.error);
+          }
+        } else {
+          toast.warning("Logo not selected");
+        }
+      } else {
+        toast.warning("Accept terms and services to continue");
+      }
     }
   };
 
@@ -197,40 +204,33 @@ const CodeRegistration = () => {
               }}
             />
 
-            <Button
-              className="flex m-4 text-black"
-              fontFamily="font-DMSans"
-              component="label"
-              role={undefined}
-              tabIndex={-1}
-              startIcon={<Image alt="brand-icon" src={Icon} />}
-            >
-              Brand logo
-              <input
-                style={{
-                  clip: "rect(0 0 0 0)",
-                  clipPath: "inset(50%)",
-                  height: 1,
-                  overflow: "hidden",
-                  position: "absolute",
-                  width: 1,
-                  whiteSpace: "nowrap",
-                }}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-              />
-            </Button>
+            <Box className="flex items-center">
+              <Button className="flex text-black bg-[#fff] rounded-[41.47px] px-4 py-4 gap-2">
+                {productImagePreview.productImagePreview ? (
+                  <Avatar
+                    alt="Remy Sharp"
+                    src={productImagePreview.productImagePreview}
+                    sx={{ width: 46, height: 46 }}
+                  />
+                ) : (
+                  <Image src={Icon} alt="Icon" width={40} height={40} />
+                )}
 
-            <Button
-              variant="contained"
-              className="bg-[#3276E8] rounded-[41.47px] font-kodchasan"
-              sx={{ fontFamily: "Kodchasan, sans-serif", mt: 2 }}
-              onClick={handleFileUpload}
-              disabled={isUploading}
-            >
-              {isUploading ? "Uploading..." : "Upload now"}
-            </Button>
+                <Typography className="font-DMSans">Product Image</Typography>
+                <input
+                  type="file"
+                  className="hidden"
+                  ref={uploadProductImageRef}
+                  onChange={handleProductImageChange}
+                />
+              </Button>
+              <Button
+                className=" bg-[#3276E8] text-white rounded-[41.47px] w-full px-4 py-2 mt-3 hover:bg-[#3276E8]"
+                onClick={handleProductImageInputClick}
+              >
+                Upload Now
+              </Button>
+            </Box>
           </Box>
 
           <Box className="flex justify-center mb-6">
@@ -432,14 +432,14 @@ const CodeRegistration = () => {
 
           <Box className="md:flex sm:flex-row md:justify-center md:items-center my-12">
             <Checkbox
+              checked={acceptForm}
+              onChange={(e) => setAcceptForm(e.target.checked)}
               sx={{
                 color: "green",
                 "&.Mui-checked": {
                   color: "green",
                 },
               }}
-              // checked={isChecked}
-              // onChange={handleCheckboxChange}
             />
             <Typography variant="body1" sx={{ marginRight: 2 }}>
               I have the authority to make this account on behalf of the brand

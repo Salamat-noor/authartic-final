@@ -262,10 +262,7 @@ function Index() {
           </Box>
 
           <Link href={"/package-plans"}>
-            <Box
-              className="relative max-w-[518px] w-full mx-auto my-2 border-2 border-[#606060] rounded-[30px] flex flex-col items-center py-4 px-2"
-              onClick
-            >
+            <Box className="relative max-w-[518px] w-full mx-auto my-2 border-2 border-[#606060] rounded-[30px] flex flex-col items-center py-4 px-2">
               <TextField
                 select
                 label="Fonts"

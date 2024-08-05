@@ -1,27 +1,39 @@
-import React, { useRef } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowBack } from "@mui/icons-material";
 import DoneIcon from "@mui/icons-material/Done";
 import CloseIcon from "@mui/icons-material/Close";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import Modal from "@mui/material/Modal";
-import Head from "next/head";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { DataGrid } from "@mui/x-data-grid";
+import { useGetAllValidationCodesQuery } from "@/slices/validationCodeApiSlice";
+import VerificationModal from "@/components/VerificationModal"; // Import the modal component
+import Head from "next/head";
 
 export default function UsersTable() {
-  const modalRef = useRef(null);
-  const [isVerified, setIsVerified] = React.useState(null);
-  const [open, setOpen] = React.useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  const { data: allCodes, refetch: fetchAllCodes } = useGetAllValidationCodesQuery(false);
 
-  const handleEditNoteClick = (row) => {
-    handleOpen(); // Open the modal when EditNoteIcon is clicked
-  };
+  const [open, setOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null); // Track the selected row for verification
+
+  const [rows, setRows] = useState([
+    {
+      id: 1,
+      fullName: "Jon",
+      email: "jon@gmail.com",
+      verified: true,
+      verificationCode: "VC00000001",
+    },
+    {
+      id: 2,
+      fullName: "Cersei",
+      email: "cersei@gmail.com",
+      verified: false,
+      verificationCode: "VC00000002",
+    },
+    // ... other rows
+  ]);
 
   const columns = [
     { field: "fullName", headerName: "User name", width: 150 },
@@ -30,24 +42,22 @@ export default function UsersTable() {
       field: "verified",
       headerName: "Verified",
       width: 150,
-      renderCell: (params) => {
-        return (
-          <div style={{ display: "flex", alignItems: "center" }}>
-            {params.value ? (
-              <DoneIcon style={{ color: "green" }} />
-            ) : (
-              <CloseIcon style={{ color: "red" }} />
-            )}
-          </div>
-        );
-      },
+      renderCell: (params) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {params.value ? (
+            <DoneIcon style={{ color: "green" }} />
+          ) : (
+            <CloseIcon style={{ color: "red" }} />
+          )}
+        </div>
+      ),
     },
     {
       field: "verificationCode",
-      headerName: "Verification_Code",
+      headerName: "Verification Code",
       width: 250,
       renderCell: (params) =>
-        params.row.verificationCode ? (
+        params.row.verified ? (
           params.row.verificationCode
         ) : (
           <div
@@ -59,100 +69,33 @@ export default function UsersTable() {
           >
             <EditNoteIcon
               style={{ color: "black", cursor: "pointer" }}
-              onClick={() => handleEditNoteClick(params.row)}
+              onClick={() => {
+                setSelectedRow(params.row); // Set the selected row
+                setOpen(true); // Open the modal
+              }}
             />
           </div>
         ),
     },
   ];
 
-  const rows = [
-    {
-      id: 1,
-      fullName: "Jon",
-      email: "jon@gmail.com",
-      verified: true,
-      verificationCode: 9870,
-    },
-    {
-      id: 2,
-      fullName: "Cersei",
-      email: "jon@gmail.com",
-      verified: false,
-      verificationCode: null,
-    },
-    {
-      id: 3,
-      fullName: "Jaime",
-      email: "jon@gmail.com",
-      verified: false,
-      verificationCode: null,
-    },
-    {
-      id: 4,
-      fullName: "Arya",
-      email: "jon@gmail.com",
-      verified: false,
-      verificationCode: null,
-    },
-    {
-      id: 5,
-      fullName: "Daenerys",
-      email: "jon@gmail.com",
-      verified: false,
-      verificationCode: null,
-    },
-  ];
   const VerificationCodes = [
-    { field: "id", headerName: "ID", width: 100 },
-    { field: "availableCodes", headerName: "Available Codes", width: 250 },
-  ];
-  const VerificationCodesRow = [
-    {
-      id: 1,
-      availableCodes: 9087,
-    },
-    {
-      id: 2,
-      availableCodes: 9087,
-    },
-    {
-      id: 3,
-      availableCodes: 9087,
-    },
-    {
-      id: 4,
-      availableCodes: 9087,
-    },
-    {
-      id: 5,
-      availableCodes: 9087,
-    },
-    {
-      id: 6,
-      availableCodes: 9087,
-    },
-    {
-      id: 7,
-      availableCodes: 9087,
-    },
-    {
-      id: 8,
-      availableCodes: 9087,
-    },
-    {
-      id: 9,
-      availableCodes: 9087,
-    },
-    {
-      id: 10,
-      availableCodes: 9087,
-    },
+    { field: "code", headerName: "Available Codes", width: 250 },
   ];
 
-  React.useEffect(() => {
-    setIsVerified(rows.filter((data) => data.verified));
-  }, []);
+  const VerificationCodesRow = allCodes?.data?.map((codes) => ({
+    id: codes.id,
+    code: codes.code,
+  }));
+
+  const handleVerificationSuccess = (code) => {
+    // Update the row data based on verification success
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.verificationCode === code ? { ...row, verified: true } : row
+      )
+    );
+  };
 
   return (
     <>
@@ -163,7 +106,7 @@ export default function UsersTable() {
       <div className="w-full min-h-screen flex flex-col justify-between">
         <Header />
 
-        <div className="w-full  h-full mx-auto mb-7 px-2 md:px-7">
+        <div className="w-full h-full mx-auto mb-7 px-2 md:px-7">
           <div className="my-7 text-left w-full">
             <Link
               href={"/admin-dashboard"}
@@ -182,6 +125,7 @@ export default function UsersTable() {
           <div className="flex items-start gap-11 flex-col lg:flex-row">
             <div className="w-full overflow-x-auto shadow-lg">
               <DataGrid
+                disableColumnMenu
                 rows={rows}
                 columns={columns}
                 pageSize={10}
@@ -198,6 +142,7 @@ export default function UsersTable() {
 
             <div className="w-full overflow-x-auto shadow-lg lg:w-1/3">
               <DataGrid
+                disableColumnMenu
                 rows={VerificationCodesRow}
                 columns={VerificationCodes}
                 pageSize={10}
@@ -217,37 +162,13 @@ export default function UsersTable() {
         <Footer />
       </div>
 
-      {/* MODAL */}
-      <div className="items-center justify-center h-auto hidden">
-        <Button onClick={handleOpen} ref={modalRef}>
-          Open modal
-        </Button>
-        <Modal
-          open={open}
-          onClose={handleClose}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
-        >
-          <div className="fixed z-10 inset-0 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="bg-white rounded-lg shadow-xl p-4 max-w-lg w-full">
-                <Typography id="modal-modal-title" variant="h6" component="h2">
-                  False Verification
-                </Typography>
-                <Typography id="modal-modal-description" className="mt-2">
-                  Click this link to verify yourself{" "}
-                  <Link href={"/"} className="text-blue-700">
-                    Verify
-                  </Link>
-                </Typography>
-                <Button onClick={handleClose} className="mt-4">
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Modal>
-      </div>
+      {/* Verification Modal */}
+      <VerificationModal
+        open={open}
+        handleClose={() => setOpen(false)}
+        handleVerificationSuccess={handleVerificationSuccess}
+        selectedRow={selectedRow}
+      />
     </>
   );
 }
