@@ -24,7 +24,7 @@ export default function PackageCard({ data }) {
 
     try {
       let res = await activateSubscriptionPlan(id);
-
+      console.log(res)
       if (res?.error) {
 
         if (res.error.status === 404) {
