@@ -24,29 +24,9 @@ export const validationCodeApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
-    getAvailableCodes: builder.query({
-      query: () => ({
-        url: `${CREATE_VAIDATION_CODE_URL}?page=1&limit=12&is_used=false`,
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${getTokenFromLocalStorage()}`
-        }
-      }),
-    }),
-
-    getUsedValidationCodes: builder.query({
-      query: () => ({
-        url: `${CREATE_VAIDATION_CODE_URL}?page=1&limit=12&is_used=true`,
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${getTokenFromLocalStorage()}`
-        }
-      }),
-    }),
-
-    getAllValidationCodes: builder.query({
-      query: () => ({
-        url: `${CREATE_VAIDATION_CODE_URL}?page=1&limit=12&is_used=false`,
+    getValidationCodeDetails: builder.query({
+      query: (params) => ({
+        url: `${CREATE_VAIDATION_CODE_URL}?page=${params.page}&limit=${params.limit}&is_used=${params.isUsed}`,
         method: 'GET',
         headers: {
           Authorization: `Bearer ${getTokenFromLocalStorage()}`
@@ -56,4 +36,4 @@ export const validationCodeApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useCreateValidationCodeMutation, useGetValidationCodeByCodeMutation, useGetAllValidationCodesQuery, useGetAvailableCodesQuery, useGetUsedValidationCodesQuery } = validationCodeApiSlice;
+export const { useCreateValidationCodeMutation, useGetValidationCodeByCodeMutation, useGetValidationCodeDetailsQuery } = validationCodeApiSlice;

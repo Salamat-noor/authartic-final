@@ -1,11 +1,15 @@
 "use client";
 import Image from "next/image";
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@mui/material";
 import sampleIMG from "@/assets/images/sample.svg";
+import Link from "next/link";
 const CertificateCard = ({ data }) => {
   const issuedDate = new Date(`${data.issued_date}`).toLocaleString();
   const productImgUrl = data?.product_image?.url;
+
+
+  useEffect(() => { console.log('certificateDatacertificateDatacertificateData', data?.saved_draft) }, [data])
   return (
     <div className="w-full flex items-center flex-col sm:flex-row  justify-between gap-[1vw] py-3 px-1 sm:px-5">
       <div className="w-full flex items-center justify-evenly sm:justify-between">
@@ -25,11 +29,13 @@ const CertificateCard = ({ data }) => {
         </div>
       </div>
       <div className="w-full sm:w-1/2 flex-col pl-[5vw] items-center sm:items-end justify-center gap-3 flex">
-        <Button
-          className={`bg-[#22477F] text-white w-[189px] h-[26px] hover:text-black rounded-[7px] font-bold font-kodchasan md:text-[16px] lg:text-[20px] capitalize leading-[26px]`}
-        >
-          Issue More
-        </Button>
+        <Link href={`/issue-certificate/?saved_draft=${data?.saved_draft}&id=${data?.id}`}>
+          <Button
+            className={`bg-[#22477F] text-white w-[189px] h-[26px] hover:text-black rounded-[7px] font-bold font-kodchasan md:text-[16px] lg:text-[20px] capitalize leading-[26px]`}
+          >
+            Issue More
+          </Button>
+        </Link>
         <Button
           className={`bg-[#22477F] text-white w-[189px] h-[26px] hover:text-black  rounded-[7px] font-bold font-kodchasan md:text-[16px] lg:text-[20px] capitalize leading-[26px]`}
         >

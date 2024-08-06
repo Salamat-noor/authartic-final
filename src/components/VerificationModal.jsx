@@ -1,28 +1,50 @@
 import React, { useState } from "react";
 import { Modal, Typography, Button, TextField } from "@mui/material";
 import Link from "next/link";
+import { toast } from "react-toastify";
+import { useRouter } from "next/router";
 
 const VerificationModal = ({
   open,
   handleClose,
   handleVerificationSuccess,
-  selectedRow,
+  verifyVendorFunc,
+  vendorId,
+  fetchVendorsAgain
 }) => {
+  const router = useRouter();
   const [validationCode, setValidationCode] = useState("");
-  const [error, setError] = useState("");
 
-  // Mock validation codes for demonstration
-  const validCodes = ["VC00000001", "VC00000002"]; // Example codes
+  const submitHandler = async () => {
 
-  const handleValidation = () => {
-    if (validCodes.includes(validationCode)) {
-      // Proceed with verification logic
-      console.log("Vendor verified successfully!");
-      handleVerificationSuccess(validationCode); // Update the row data
-      setError("");
-      handleClose(); // Close modal on successful verification
-    } else {
-      setError("Invalid validation code. Please try again.");
+    try {
+      let res = await verifyVendorFunc({
+        vendor_id: vendorId,
+        validation_code: validationCode
+      });
+      if (res?.error) {
+        if (res.error.status === 404) {
+          toast.error(res?.error?.data?.message);
+        } else {
+          toast.error("An error occurred: " + (res.error.message || "Unknown error"));
+        }
+      } else {
+        handleVerificationSuccess(res?.data?.validation_code?.code)
+        toast.success(res?.data?.vendor_name + " Verified Successfully");
+        handleClose()
+        router.push('/vendors')
+        fetchVendorsAgain()
+      }
+    } catch (err) {
+      console.error("Caught Error:", err);
+
+      if (err?.response?.data) {
+        toast.error(err.response.data.message || "An unknown error occurred");
+      } else if (err?.message) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     }
   };
 
@@ -44,11 +66,9 @@ const VerificationModal = ({
               className="mt-4"
               value={validationCode}
               onChange={(e) => setValidationCode(e.target.value)}
-              error={!!error}
-              helperText={error}
             />
             <Button
-              onClick={handleValidation}
+              onClick={submitHandler}
               variant="contained"
               color="primary"
               className="mt-4"

@@ -91,7 +91,7 @@ export default function Home() {
               </div>
             </div>
 
-            <LogInForm title={"VENDOR LOGIN"} from={"ADMIN"} />
+            <LogInForm title={"ADMIN LOGIN"} from={"ADMIN"} />
           </div>
         </div>
         <Footer />

@@ -8,14 +8,47 @@ import CardContent from "@mui/material/CardContent";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import CheckIcon from "@mui/icons-material/Check";
+import { useRouter } from "next/router";
+import { toast } from "react-toastify";
 export default function PackageCard({ data }) {
-  const [postSubscriptionPlanId] = useActivatePlanMutation();
+  const router = useRouter()
+  const [activateSubscriptionPlan, { isLoading: isActivationLoading, error: isActivationError }] = useActivatePlanMutation()
+
   const standardPlanPrice = data.id === 2 && data.price;
   const proPlanPrice = data.id === 3 && data.price;
 
-  const handleGenerateSubscriptionPlan = async () => {
-    const res = await postSubscriptionPlanId(data?.id).unwrap();
-    console.log(res);
+
+
+  const submitHandler = async (id) => {
+    console.log("ID passed to submitHandler:", id);
+
+    try {
+      let res = await activateSubscriptionPlan(id);
+
+      if (res?.error) {
+
+        if (res.error.status === 404) {
+          toast.error(res?.error?.data?.message);
+        } else {
+          toast.error("An error occurred: " + (res.error.message || "Unknown error"));
+        }
+
+      } else {
+        toast.success("Subscribed Plan Successfully");
+        // router.push('/home-after-login');
+      }
+
+    } catch (err) {
+      console.error("Caught Error:", err);
+
+      if (err?.response?.data) {
+        toast.error(err.response.data.message || "An unknown error occurred");
+      } else if (err?.message) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    }
   };
   return (
     <div
@@ -31,15 +64,14 @@ export default function PackageCard({ data }) {
       >
         <Card
           variant="outlined"
-          className={`${
-            data.id === 1
-              ? "bg-[#919197]"
-              : data.id === 2
+          className={`${data.id === 1
+            ? "bg-[#919197]"
+            : data.id === 2
               ? "bg-[#2E2E3A]"
               : data.id === 3
-              ? "bg-[#1D1D27]"
-              : ""
-          } lg:px-1`}
+                ? "bg-[#1D1D27]"
+                : ""
+            } lg:px-1`}
         >
           <React.Fragment>
             <CardContent className="text-white">
@@ -60,9 +92,8 @@ export default function PackageCard({ data }) {
                     key={index}
                     color="white"
                     variant="div"
-                    className={`flex items-start justify-start gap-1 ${
-                      data.id === 3 ? "my-2" : " my-1 "
-                    }`}
+                    className={`flex items-start justify-start gap-1 ${data.id === 3 ? "my-2" : " my-1 "
+                      }`}
                   >
                     <CheckIcon sx={{ color: "#A009B9" }} />
                     <b
@@ -76,23 +107,23 @@ export default function PackageCard({ data }) {
             </CardContent>
             <CardActions className="justify-center">
               <Button
-                onClick={handleGenerateSubscriptionPlan}
+                onClick={() => submitHandler(data?.id)}
                 size="small"
                 className="text-[18px] font-medium bg-[#387AFA] text-white h-[34px] rounded-[20px] w-full font-poppins hover:bg-[#3879fac9]"
               >
                 {data.id === 1
                   ? "Free Plan"
                   : data.id === 2
-                  ? `$${standardPlanPrice}`
-                  : data.id === 3
-                  ? `$${proPlanPrice}`
-                  : ""}
+                    ? `$${standardPlanPrice}`
+                    : data.id === 3
+                      ? `$${proPlanPrice}`
+                      : ""}
                 <span className="font-poppins font-medium text-[10px] mx-1 leading-[12px] text-left">
                   {data.id === 2
                     ? "Billed Monthly, Cancel any time"
                     : data.id === 3
-                    ? "Billed Monthly, Cancel any time"
-                    : ""}
+                      ? "Billed Monthly, Cancel any time"
+                      : ""}
                 </span>
               </Button>
             </CardActions>
