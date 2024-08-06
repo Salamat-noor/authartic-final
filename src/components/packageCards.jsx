@@ -1,5 +1,6 @@
 "use client";
-import * as React from "react";
+import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import { useActivatePlanMutation } from "@/slices/packageDataApiSlice";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -8,7 +9,8 @@ import CardContent from "@mui/material/CardContent";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import CheckIcon from "@mui/icons-material/Check";
-export default function PackageCard({ data }) {
+
+export default function PackageCard({ data, validationStatus }) {
   const [postSubscriptionPlanId] = useActivatePlanMutation();
   const standardPlanPrice = data.id === 2 && data.price;
   const proPlanPrice = data.id === 3 && data.price;
@@ -78,7 +80,14 @@ export default function PackageCard({ data }) {
               <Button
                 onClick={handleGenerateSubscriptionPlan}
                 size="small"
-                className="text-[18px] font-medium bg-[#387AFA] text-white h-[34px] rounded-[20px] w-full font-poppins hover:bg-[#3879fac9]"
+                className={
+                  ("text-[18px] font-medium text-white h-[34px] rounded-[20px] w-full font-poppins hover:bg-[#3879fac9]",
+                  {
+                    "text-[18px] font-medium text-white h-[34px] rounded-[20px] w-full font-poppins hover:bg-[#3879fac9]":
+                      validationStatus, // Grey color when validationStatus is true
+                  })
+                }
+                disabled={validationStatus}
               >
                 {data.id === 1
                   ? "Free Plan"
