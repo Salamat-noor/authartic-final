@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useActivatePlanMutation } from "@/slices/packageDataApiSlice";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
@@ -8,8 +9,14 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import CheckIcon from "@mui/icons-material/Check";
 export default function PackageCard({ data }) {
+  const [postSubscriptionPlanId] = useActivatePlanMutation();
   const standardPlanPrice = data.id === 2 && data.price;
   const proPlanPrice = data.id === 3 && data.price;
+
+  const handleGenerateSubscriptionPlan = async () => {
+    const res = await postSubscriptionPlanId(data?.id).unwrap();
+    console.log(res);
+  };
   return (
     <div
       className={`w-[80%] sm:w-[100%] justify-self-center md:justify-self-auto md:max-w-[329px] relative lg:w-[329px]`}
@@ -69,8 +76,9 @@ export default function PackageCard({ data }) {
             </CardContent>
             <CardActions className="justify-center">
               <Button
+                onClick={handleGenerateSubscriptionPlan}
                 size="small"
-                className="text-[18px] font-medium bg-[#387AFA] text-white h-[34px] rounded-[20px] w-full font-poppins"
+                className="text-[18px] font-medium bg-[#387AFA] text-white h-[34px] rounded-[20px] w-full font-poppins hover:bg-[#3879fac9]"
               >
                 {data.id === 1
                   ? "Free Plan"
@@ -79,7 +87,7 @@ export default function PackageCard({ data }) {
                   : data.id === 3
                   ? `$${proPlanPrice}`
                   : ""}
-                <span className="font-poppins font-medium text-[10px] mx-1 leading-[12px]">
+                <span className="font-poppins font-medium text-[10px] mx-1 leading-[12px] text-left">
                   {data.id === 2
                     ? "Billed Monthly, Cancel any time"
                     : data.id === 3

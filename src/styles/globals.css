@@ -39,3 +39,8 @@ body {
   font-size: calc(4px + 1vw);
 }
 
+::-webkit-scrollbar {
+  background-color: #333;
+  width: 0px; /* Width of the scrollbar */
+  scrollbar-width: none;
+}

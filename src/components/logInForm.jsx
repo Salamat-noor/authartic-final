@@ -10,7 +10,7 @@ import { useLoginMutation } from "@/slices/userApiSlice";
 import { setCredentials } from "@/slices/authSlice";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router"; // Import useRouter from next/router
-const LoginForm = ({ title }) => {
+const LoginForm = ({ title, from }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState(""); // Track the selected role
@@ -159,21 +159,15 @@ const LoginForm = ({ title }) => {
         className="mb-10"
       />
       <div className="flex items-center justify-between md:justify-center px-3 md:p-0">
-        <div className="flex items-center justify-start rounded-[50px] overflow-hidden bg-[#22477F] p-[1px]">
+        <div className="flex items-center justify-start overflow-hidden bg-[#22477F] p-[1px]  rounded-[7px]">
           <Button
-            className="cursor-pointer rounded-br-[50px] rounded-tr-[50px] font-kodchasan text-md md:text-lg xl:text-xl rounded-[7px]  rounded-l-[50px] rounded-r-[50px] text-white hover:bg-[#22477F] font-normal py-1 px-5 md:px-9 bg-[#22477F]"
-            onClick={() => submitHandler("ADMIN")}
+            className="cursor-pointer font-kodchasan text-md md:text-lg xl:text-xl text-white hover:bg-[#22477F] font-normal py-1 px-5 md:px-9 bg-[#22477F]"
+            onClick={() => submitHandler(from === "ADMIN" ? "ADMIN" : "VENDOR")}
           >
-            ADMIN
-          </Button>
-          <Button
-            className="cursor-pointer  font-kodchasan text-md md:text-lg xl:text-xl rounded-[7px] rounded-l-[50px] rounded-r-[50px] text-white hover:bg-[#22477F] font-normal py-1 px-5 md:px-9 bg-[#22477F]  border-2 border-slate-300 border-solid"
-            onClick={() => submitHandler("VENDOR")}
-          >
-            VENDOR
+            Login
           </Button>
         </div>
-        <div className="hidden sm:block md:hidden">
+        <div className="block md:hidden">
           <RegisterBTN title={"Register"} />
         </div>
       </div>
@@ -184,10 +178,6 @@ const LoginForm = ({ title }) => {
         >
           Recover Lost Account
         </Link>
-
-        <div className="flex items-center justify-center sm:hidden w-full my-3">
-          <RegisterBTN title={"Register"} />
-        </div>
       </div>
     </Box>
   );

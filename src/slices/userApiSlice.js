@@ -20,6 +20,16 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         },
       }),
     }),
+    updateProfile: builder.mutation({
+      query: (data) => ({
+        url: `${USER_URL}`,
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${getTokenFromLocalStorage()}`, // Replace with your function to get the token
+        },
+        body: data,
+      }),
+    }),
     register: builder.mutation({
       query: (data) => ({
         url: `${AUTH_URL}/register`,
@@ -30,5 +40,5 @@ export const usersApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useLoginMutation, useGetProfileQuery, useRegisterMutation } =
+export const { useLoginMutation, useGetProfileQuery, useRegisterMutation, useUpdateProfileMutation } =
   usersApiSlice;
