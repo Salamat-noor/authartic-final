@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { useGetValidationCodeDetailsQuery, useCreateValidationCodeMutation } from '@/slices/validationCodeApiSlice';
@@ -6,10 +7,13 @@ import Header from '@/components/header';
 import Footer from '@/components/footer';
 import Link from 'next/link';
 import { ArrowBack } from '@mui/icons-material';
+
+
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+
 import { toast } from 'react-toastify';
 
 const options = [
@@ -22,9 +26,12 @@ const columns = [
   { field: 'id', headerName: 'ID', width: 100, headerClassName: 'bg-[#22477F] text-slate-100 text-md md:text-lg' },
   { field: 'is_used', headerName: 'is_used', width: 115, headerClassName: 'bg-[#22477F] text-slate-100 text-md md:text-lg' },
   { field: 'code', headerName: 'Code', width: 200, headerClassName: 'bg-[#22477F] text-slate-100 font-bold text-md md:text-lg' },
+
+
 ];
 
 const ITEM_HEIGHT = 48;
+
 
 export default function PaginatedTable() {
   const [tableRows, setTableRows] = useState([]);
@@ -66,11 +73,13 @@ export default function PaginatedTable() {
 
   const [handleModelOpen, setHandleModelOpen] = useState(false);
 
+
   const handleModalOpen = () => setHandleModelOpen(true);
   const handleModalClose = () => {
     setHandleModelOpen(false);
     setNumberOfCodes(''); // Clear input field when closing modal
   };
+
 
   const submitHandler = async () => {
     try {
@@ -140,6 +149,7 @@ export default function PaginatedTable() {
               </Menu>
             </div>
           </Box>
+
 
           <Box sx={{ width: '100%', height: "450px", overflow: 'scroll' }}>
             {isLoading && <Typography variant='h5' color={"primary"}>Loading...</Typography>}
