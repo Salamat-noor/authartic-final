@@ -18,6 +18,7 @@ import Icon from "../assets/images/elements.svg";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { useRouter } from "next/router";
+import { useGetProfileQuery } from "@/slices/userApiSlice";
 
 const initialData = {
   name: "",
@@ -32,6 +33,8 @@ const initialData = {
 };
 
 function Index() {
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // Track if data is loaded
+  const { data: currentUser, isLoading: isCurrentUserLoading, error: isCurrentUserError, refetch: currentUserRefetch } = useGetProfileQuery();
   const router = useRouter();
   const uploadProductImageRef = useRef(null);
   const uploadCustomBgRef = useRef(null);
@@ -149,6 +152,13 @@ function Index() {
     }
   }, [formData.font_color, formData.bg_color]);
 
+  useEffect(() => {
+    // Simulate fetching userInfo data or any necessary data
+    if (currentUser) {
+      setIsDataLoaded(true);
+    }
+  }, [currentUser]);
+
   return (
     <>
       <Header />
@@ -252,18 +262,19 @@ function Index() {
                 <legend className="bg-white text-sm text-black px-[3px] pb-[3pxpx] tracking-tighter">
                   Number of Certificates
                 </legend>
-                <input
-                  value={formData.number_of_certificate}
-                  onChange={(e) =>
-                    setFormData((prev) => {
-                      return { ...prev, number_of_certificate: e.target.value };
-                    })
-                  }
-                  type="number"
-                  name="number_of_certificate"
-                  className="w-full border-none outline-none h-[60px]"
-                  min={1}
-                />
+                {isDataLoaded && (
+                  <select
+                    className="outline-none border-none w-full h-full"
+                    name="number_of_certificate_select"
+                    id="number_of_certificate_select"
+                    value={formData.number_of_certificate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, number_of_certificate: e.target.value }))}
+                  >
+                    {[...Array(currentUser?.subscriptionStatus?.remaining_certificates)].map((_, index) => (
+                      <option key={index} value={index + 1}>{index + 1}</option>
+                    ))}
+                  </select>
+                )}
               </fieldset>
             </Box>
           </Box>
@@ -304,11 +315,10 @@ function Index() {
               ></span>
 
               <div
-                className={`absolute left-0 top-0 z-10 flex flex-col bg-slate-300 gap-3 py-1 px-3 rounded-lg transition-all ${
-                  toggleColorPicker.isOpenFontColorpicker
-                    ? "block opacity-1 scale-1"
-                    : "hidden opacity-0 scale-0"
-                }`}
+                className={`absolute left-0 top-0 z-10 flex flex-col bg-slate-300 gap-3 py-1 px-3 rounded-lg transition-all ${toggleColorPicker.isOpenFontColorpicker
+                  ? "block opacity-1 scale-1"
+                  : "hidden opacity-0 scale-0"
+                  }`}
               >
                 <h1
                   style={{ color: formData.font_color }}
@@ -376,11 +386,10 @@ function Index() {
                 ></span>
 
                 <div
-                  className={`absolute left-0 top-0 z-10 flex flex-col bg-slate-300 gap-3 py-1 px-3 rounded-lg transition-all ${
-                    toggleColorPicker.isOpenBgColorPicker
-                      ? "block opacity-1 scale-1"
-                      : "hidden opacity-0 scale-0"
-                  }`}
+                  className={`absolute left-0 top-0 z-10 flex flex-col bg-slate-300 gap-3 py-1 px-3 rounded-lg transition-all ${toggleColorPicker.isOpenBgColorPicker
+                    ? "block opacity-1 scale-1"
+                    : "hidden opacity-0 scale-0"
+                    }`}
                 >
                   <h1
                     style={{ backgroundColor: formData.bg_color }}

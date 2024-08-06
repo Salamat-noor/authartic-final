@@ -5,10 +5,28 @@ import { getTokenFromLocalStorage } from "@/utils/get-token";
 export const certificateInfoApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getMyCertificateInfo: builder.query({
-      query: (data) => ({
-        url: `${CERTIFICATE_INFO_URL}`,
+      query: (params) => ({
+        url: `${CERTIFICATE_INFO_URL}?page=${params?.page}&limit=${params?.limit}&saved_draft=${params?.saved_draft}`,
         method: "GET",
-        body: data,
+        headers: {
+          Authorization: `Bearer ${getTokenFromLocalStorage()}`, // Replace with your function to get the token
+        },
+      }),
+    }),
+    getCertificateinfoById: builder.query({
+      query: (params) => ({
+        url: `${CERTIFICATE_INFO_URL}/?saved_draft=${params.certificateSavedDraft}&id=${params.certificateInfoId}`,
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${getTokenFromLocalStorage()}`, // Replace with your function to get the token
+        },
+      }),
+    }),
+    reIssueCertificates: builder.mutation({
+      query: (data) => ({
+        url: `${CERTIFICATE_INFO_URL}/reissue/${data.certificateInfoId}`,
+        method: "POST",
+        body: data.bodyData,
         headers: {
           Authorization: `Bearer ${getTokenFromLocalStorage()}`, // Replace with your function to get the token
         },
@@ -27,4 +45,4 @@ export const certificateInfoApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useGetMyCertificateInfoQuery, usePostCertificateInfoMutation } = certificateInfoApiSlice;
+export const { useGetMyCertificateInfoQuery, usePostCertificateInfoMutation, useGetCertificateinfoByIdQuery, useReIssueCertificatesMutation } = certificateInfoApiSlice;

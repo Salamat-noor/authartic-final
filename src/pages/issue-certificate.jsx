@@ -1,11 +1,57 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Typography, Button, TextField, Box, Checkbox } from "@mui/material";
 import Image from "next/image";
 import image from "../assets/images/image.png";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { useRouter } from 'next/router';
+import { useGetCertificateinfoByIdQuery, useReIssueCertificatesMutation } from "@/slices/certificateInfoApiSlice";
+import { toast } from "react-toastify";
+
 function IssueMore() {
   const [issueState, setIssueState] = useState("issueMore");
+  const [reIssueCertificateNo, setReIssueCertificateNo] = useState(0);
+  const router = useRouter();
+  const { id: certificateInfoId, saved_draft: certificateSavedDraft } = router.query;
+
+  // Fetch certificate information only if certificateInfoId is available
+  const [reIssueCertificate, { isLoading: isLoadingReIssueCertificates, error: isErrorinReissueCertificate }] = useReIssueCertificatesMutation()
+  const { data: certificateInfo, isLoading: isCertificateInfoLoading, error: isCertificateInfoError, refetch } = useGetCertificateinfoByIdQuery({ certificateInfoId, certificateSavedDraft });
+
+
+  const reIssueHandler = async () => {
+    try {
+      const res = await reIssueCertificate({ certificateInfoId, bodyData: { number_of_certificate: parseInt(reIssueCertificateNo) } })
+
+      if (res?.error) {
+
+        if (res.error.status === 404) {
+          toast.error(res?.error?.data?.message);
+        } else {
+          toast.error("An error occurred: " + (res.error.message || "Unknown error"));
+        }
+
+      } else {
+        toast.success(res?.data?.message);
+        refetch()
+      }
+
+    } catch (err) {
+      console.error("Caught Error:", err);
+
+      if (err?.response?.data) {
+        toast.error(err.response.data.message || "An unknown error occurred");
+      } else if (err?.message) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    }
+  };
+
+  useEffect(() => {
+    console.log("ddddddaaaaataaaaaaaaaa", certificateInfo);
+  }, [certificateInfo]);
 
   return (
     <>
@@ -13,18 +59,19 @@ function IssueMore() {
       <Box className="min-h-screen">
         <Box className="flex items-center justify-center flex-col sm:flex-row gap-[1vw] ">
           <Box>
-            <Image src={image} alt="sample" width={168} height={126} />
+            <Image src={certificateInfo?.data[0]?.product_image
+              ?.url || image} alt="sample" width={168} height={126} />
           </Box>
 
           <Box className="flex flex-col gap-1">
             <Typography className="font-koho text-[#080808] font-light text-[20px]">
-              Certificate Name
+              {certificateInfo?.data[0]?.name || "example name"}
             </Typography>
             <Typography className="font-koho text-[#080808] font-light text-[20px]">
-              Date Certificates were issued
+              {certificateInfo?.data[0]?.issued_date || "example Date"}
             </Typography>
             <Typography className="font-koho text-[#080808] font-light text-[20px]">
-              Number of certificates issued
+              number of certificates issued {certificateInfo?.data[0]?.issued || 0}
             </Typography>
           </Box>
 
@@ -32,9 +79,8 @@ function IssueMore() {
             <Button
               type="submit"
               variant="contained"
-              className={`rounded-[7px] font-kodchasan  float-end py-0 ${
-                issueState === "issueMore" ? "bg-[#C2C3CE]" : "bg-[#22477F]"
-              }`}
+              className={`rounded-[7px] font-kodchasan  float-end py-0 ${issueState === "issueMore" ? "bg-[#C2C3CE]" : "bg-[#22477F]"
+                }`}
               onClick={() => {
                 setIssueState("issueMore");
               }}
@@ -44,11 +90,10 @@ function IssueMore() {
             <Button
               type="submit"
               variant="contained"
-              className={`rounded-[7px] font-kodchasan  float-end py-0 ${
-                issueState === "reissueExisting"
-                  ? "bg-[#C2C3CE]"
-                  : "bg-[#22477F]"
-              }`}
+              className={`rounded-[7px] font-kodchasan  float-end py-0 ${issueState === "reissueExisting"
+                ? "bg-[#C2C3CE]"
+                : "bg-[#22477F]"
+                }`}
               onClick={() => {
                 setIssueState("reissueExisting");
               }}
@@ -58,9 +103,8 @@ function IssueMore() {
             <Button
               type="submit"
               variant="contained"
-              className={`rounded-[7px] font-kodchasan  float-end py-0 ${
-                issueState === "reportIssue" ? "bg-[#C2C3CE]" : "bg-[#22477F]"
-              }`}
+              className={`rounded-[7px] font-kodchasan  float-end py-0 ${issueState === "reportIssue" ? "bg-[#C2C3CE]" : "bg-[#22477F]"
+                }`}
               onClick={() => {
                 setIssueState("reportIssue");
               }}
@@ -83,8 +127,11 @@ function IssueMore() {
                 <TextField
                   variant="outlined"
                   fullWidth
+                  type="number"
                   placeholder="Enter text here"
                   className="my-6"
+                  value={reIssueCertificateNo}
+                  onChange={e => setReIssueCertificateNo(e.target.value)}
                   sx={{
                     backgroundColor: "#fff",
                     width: "225px",
@@ -121,7 +168,7 @@ function IssueMore() {
                   }}
                 />
                 <Typography variant="body1" sx={{ marginRight: 2 }}>
-                  I aknowledge
+                  I acknowledge
                 </Typography>
               </Box>
 
@@ -129,6 +176,7 @@ function IssueMore() {
                 variant="contained"
                 className="bg-[#27A213] rounded-[7px] font-kodchasan w-[189px]"
                 sx={{ fontFamily: "Kodchasan, sans-serif" }}
+                onClick={reIssueHandler}
               >
                 Place Order
               </Button>
@@ -214,40 +262,7 @@ function IssueMore() {
           </Box>
         ) : (
           <Box className="max-w-[602px] w-full mx-auto  bg-[#22477F] py-6 my-6 rounded-[30px]">
-            <Box className="mx-10 my-4">
-              <Box>
-                <TextField
-                  multiline
-                  rows={12}
-                  variant="outlined"
-                  fullWidth
-                  name="description"
-                  sx={{
-                    backgroundColor: "#fff",
-                    maxWidth: "508px",
-                    width: "100%",
-                    borderRadius: "10px",
-                  }}
-                  className="mt-4 lg:mt-0 md:mt-0"
-                />
-              </Box>
-            </Box>
-            <Box className="flex justify-center items-center flex-col">
-              <Button
-                variant="contained"
-                className="bg-[#27A213] rounded-[7px] font-kodchasan w-[189px]"
-                sx={{ fontFamily: "Kodchasan, sans-serif" }}
-              >
-                Place Order
-              </Button>
-              <Button
-                variant="contained"
-                className="bg-[#A21313] rounded-[7px] font-kodchasan mt-5 w-[189px]"
-                sx={{ fontFamily: "Kodchasan, sans-serif" }}
-              >
-                Cancel
-              </Button>
-            </Box>
+            {/* Your other states or content here */}
           </Box>
         )}
       </Box>

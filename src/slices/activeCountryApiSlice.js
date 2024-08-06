@@ -1,5 +1,7 @@
 import { apiSlice } from "./apiSlice";
 import { COUNTRY_URL } from "../utils/constants";
+import { ADMIN_COUNTRIES_URL } from "../utils/constants";
+import { getTokenFromLocalStorage } from "@/utils/get-token";
 
 export const activeCountryApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -10,7 +12,17 @@ export const activeCountryApiSlice = apiSlice.injectEndpoints({
         body: data,
       }),
     }),
+    findAllCountries: builder.query({
+      query: ({ page, limit, isActiveCountry }) => ({
+        url: `${ADMIN_COUNTRIES_URL}?page=${page}&limit=${limit}&is_active=${isActiveCountry}`,
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${getTokenFromLocalStorage()}`
+        }
+      }),
+    }),
+
   }),
 });
 
-export const { useGetActiveCountriesQuery } = activeCountryApiSlice;
+export const { useGetActiveCountriesQuery, useFindAllCountriesQuery } = activeCountryApiSlice;

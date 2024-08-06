@@ -9,17 +9,51 @@ import { useGetMyCertificateInfoQuery } from "@/slices/certificateInfoApiSlice";
 import { useGetProfileQuery } from "@/slices/userApiSlice";
 
 const index = () => {
+  const [drafttext, setDraftText] = useState("Drafts")
   const { data, error: authError } = useGetProfileQuery();
-  console.log("adsfsadf  ", data);
-  console.log(authError);
+  const [certificateData, setCertificateData] = useState([]);
+  const [params, setParams] = useState({
+    page: 1,
+    limit: 10,
+    saved_draft: false
+  })
   const {
-    data: certificateData,
+    data: allCertificateData,
     error,
     isError,
     isLoading,
-  } = useGetMyCertificateInfoQuery();
+    refetch
+  } = useGetMyCertificateInfoQuery(params);
 
-  console.log(error);
+
+  const handleDraftCertificates = () => {
+
+    if (drafttext === "Drafts") {
+      setDraftText("Issued Certificates")
+      setParams({
+        page: 1,
+        limit: 10,
+        saved_draft: true
+      })
+    } else {
+      setDraftText("Drafts")
+      setParams({
+        page: 1,
+        limit: 10,
+        saved_draft: false
+      })
+    }
+    refetch();
+  }
+
+  useEffect(() => {
+    if (allCertificateData) {
+      setCertificateData(allCertificateData)
+      refetch()
+    }
+
+
+  }, [allCertificateData, refetch])
 
   return (
     <>
@@ -29,9 +63,10 @@ const index = () => {
           <Box className="w-full max-w-[962px]  relative mx-auto mt-1">
             <Box className="flex flex-col items-center w-full">
               <Box className="flex flex-col items-end gap-1">
+
                 <CustomButton title={"New order"} />
-                <Button className={`bg-white text-black hover:bg-white`}>
-                  drafts
+                <Button className={`bg-white text-black hover:bg-white`} onClick={() => handleDraftCertificates(true)}>
+                  {drafttext}
                 </Button>
               </Box>
             </Box>

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostCertificateInfoMutation } from "@/slices/certificateInfoApiSlice";
 import { useUploadAttachmentMutation } from "@/slices/uploadAttachmentApiSlice";
+import { useGetProfileQuery } from "@/slices/userApiSlice";
 import { toast } from "react-toastify";
 import {
   Typography,
@@ -18,6 +19,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { useSelector } from "react-redux";
 
 const initialData = {
   name: "",
@@ -34,6 +36,7 @@ const initialData = {
 function Index() {
   const router = useRouter();
   const uploadProductImageRef = useRef(null);
+  const { data: currentUser, isLoading: isCurrentUserLoading, error: isCurrentUserError, refetch: currentUserRefetch } = useGetProfileQuery();
   const [productImagePreview, setProductImagePreview] = useState({
     productImagePreview: null,
     customImagePreview: null,
@@ -102,6 +105,7 @@ function Index() {
             certificateData
           ).unwrap();
           // Handle success - Reset form and show success message
+          currentUserRefetch();
           setFormData(initialData);
           setImageFiles({
             productImage: null,
@@ -142,6 +146,15 @@ function Index() {
       );
     }
   }, [formData.font_color, formData.bg_color]);
+
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // Track if data is loaded
+
+  useEffect(() => {
+    // Simulate fetching userInfo data or any necessary data
+    if (currentUser) {
+      setIsDataLoaded(true);
+    }
+  }, [currentUser]);
 
   return (
     <>
@@ -241,22 +254,23 @@ function Index() {
 
             {/* HANDLE NUMBER OF CERTIFICATES */}
             <Box className="flex justify-center w-full md:w-auto">
-              <fieldset className="max-w-[193px] h-[80px] bg-white rounded-[10px] border-2 border-[#606060] px-2 flex flex-col">
-                <legend className="bg-white text-sm text-black px-[3px] pb-[3pxpx] tracking-tighter">
+              <fieldset className="max-w-[193px] h-[70px] bg-white rounded-[10px] border-2 border-[#606060] px-2 flex flex-col">
+                <legend className="bg-white text-sm text-black px-[3px] pb-[3px] tracking-tighter">
                   Number of Certificates
                 </legend>
-                <input
-                  value={formData.number_of_certificate}
-                  onChange={(e) =>
-                    setFormData((prev) => {
-                      return { ...prev, number_of_certificate: e.target.value };
-                    })
-                  }
-                  type="number"
-                  name="number_of_certificate"
-                  className="w-full border-none outline-none h-[60px]"
-                  min={1}
-                />
+                {isDataLoaded && (
+                  <select
+                    className="outline-none border-none w-full h-full"
+                    name="number_of_certificate_select"
+                    id="number_of_certificate_select"
+                    value={formData.number_of_certificate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, number_of_certificate: e.target.value }))}
+                  >
+                    {[...Array(currentUser?.subscriptionStatus?.remaining_certificates)].map((_, index) => (
+                      <option key={index} value={index + 1}>{index + 1}</option>
+                    ))}
+                  </select>
+                )}
               </fieldset>
             </Box>
           </Box>
